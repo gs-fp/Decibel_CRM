@@ -26,3 +26,8 @@
 *.ttf binary
 *.eot binary
 
+# --- Decibel: prefer our version during upstream merges ---
+# Uncomment paths where Decibel's version should always win (e.g. branding).
+# Requires once per machine: git config merge.ours.driver true
+# README.md merge=ours
+# packages/twenty-front/public/favicon.ico merge=ours

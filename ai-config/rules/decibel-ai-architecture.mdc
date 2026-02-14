@@ -1,6 +1,6 @@
 ---
-description: Decibel CRM fork – AI features live in a sidecar package, not inside twenty-front modules
-globs: ["packages/decibel-ai/**", "**/decibel-ai/**"]
+description: Decibel CRM fork – AI features live in a sidecar package, not inside twenty-front modules (tool-agnostic: use with any coding assistant)
+globs: ["packages/decibel-ai/**", "**/decibel-ai/**", "packages/twenty-apps/**/decibel*", "**/logic-functions/**"]
 alwaysApply: true
 ---
 
@@ -32,10 +32,48 @@ Example (root `package.json`):
 }
 ```
 
-## 3. Summary for Cursor / AI Assistants
+## 3. Summary for AI Assistants / Coders
 
 When adding or designing AI or Decibel-specific functionality:
 
 1. **Target** `packages/decibel-ai/` (or another dedicated top-level package), **not** `packages/twenty-front/src/modules/`.
 2. **Register** any new package in the root `package.json` `workspaces.packages` array.
 3. **Integrate** with the rest of the app via clear boundaries (e.g. `twenty-front` importing from `decibel-ai`, or mounting routes/components from the sidecar), so core Twenty code stays untouched and merge-friendly.
+
+## 4. The Bridge Pattern (Frontend)
+
+Use a **single bridge file** in Twenty as the only touch point between core Twenty and Decibel AI. This keeps upstream sync conflicts to one place.
+
+- **Bridge file**: `packages/twenty-front/src/modules/decibel/decibel-bridge.ts`
+- **Role**: Import components (and other exports) from `decibel-ai` and re-export them. No Decibel logic lives here—only re-exports.
+- **Usage in core Twenty**: In core files (e.g. `RecordDetails.tsx`), add **only one line** to import and render the component, e.g. `import { DecibelRecordPanel } from '@/decibel'` and `<DecibelRecordPanel ... />`. When syncing from upstream, you only have to protect that single line if a conflict occurs.
+- **Rule**: All AI/Decibel UI and logic lives in `packages/decibel-ai/`. The only Twenty-front addition is the `decibel` module containing the bridge (and optionally a barrel `index.ts` that re-exports from the bridge).
+
+## 5. Shadow Tables (Database)
+
+Do **not** add columns to Twenty's standard tables (e.g. `person`, `company`) for AI or Decibel-specific data (e.g. AI-generated lead scores, embeddings, metadata).
+
+- **Preferred approach**: Create a **new custom object** (e.g. `aiMetadata`, `decibelLeadScore`) that has a **Relation field** pointing to the standard object. Your custom object gets its own table; the relation links it to the existing record.
+- **Benefit**: If the Twenty team changes the `person` or `company` schema, your custom table is unchanged and stays in sync via the relation. Upstream migrations do not touch your data.
+- **How**: Use the Twenty Apps / metadata API: define the custom object (e.g. with `defineObject()` in a custom app, or via the workspace metadata API) and add a relation field whose target is the standard object. See Twenty docs: custom objects, relations, and (if using Apps) `packages/twenty-docs/developers/extend/capabilities/apps.mdx`.
+
+## 6. Custom Serverless / Logic Functions (Backend)
+
+Do **not** add Decibel or AI logic inside NestJS backend controllers, services, or resolvers in `packages/twenty-server/`.
+
+- **Preferred approach**: Use **Twenty’s logic (serverless) functions** in a **custom application package**. Create a logic function and attach **triggers** so it runs when needed:
+  - **databaseEvent**: Run when records are created, updated, or deleted (e.g. `person.created`, `person.updated`, `company.updated`). Optionally restrict to specific fields via `updatedFields`.
+  - **route**: Expose an HTTP endpoint under `/s/` and run your function when it is called.
+  - **cron**: Run on a schedule (CRON expression).
+- **How**: Create or use a custom app (e.g. under `packages/twenty-apps/` or a dedicated Decibel app). Define logic functions with `defineLogicFunction()` from `twenty-sdk`, and list the triggers (e.g. `type: 'databaseEvent'`, `eventName: 'person.updated'`). Deploy/sync the app to your workspace. See `packages/twenty-docs/developers/extend/capabilities/apps.mdx` for triggers and handlers.
+- **Benefit**: No changes to the NestJS core; upstream merges stay clean. Your AI code runs in the app runtime, triggered by database events or HTTP routes.
+
+## 7. Git Workflow (Separate Project, Pull from Upstream)
+
+Decibel CRM is a **separate project**: a fork with AI features on top of Twenty. You **do not** merge anything to Twenty's main—you only **pull from** upstream (Twenty's main) when you want to bring in their latest commits.
+
+- **Your repo, your main**: This is your project. Your `main` (or primary branch) is where you build and maintain Decibel on top of Twenty. When you pull from upstream Twenty, you're bringing their changes **into** your repo (e.g. `git pull upstream main` or rebase onto `upstream/main`).
+
+- **Modular commits**: Commit Decibel-related changes in **small, logical chunks** so that when you pull upstream, conflicts are limited and easy to resolve.
+- **Bridge commits**: If you touch a core Twenty file (e.g. the one line that imports the bridge), label the commit so it is easy to spot when resolving conflicts, e.g. `bridge: add DecibelRecordPanel to RecordDetails` or `bridge: [description]`.
+- **`.gitattributes`**: When you pull or merge from upstream into your repo, use `.gitattributes` to prefer your version of specific files (e.g. branding, README, config). Add lines like `README.md merge=ours`. Requires once per machine: `git config merge.ours.driver true`. See the Decibel section at the bottom of the repo `.gitattributes`; only use for files you want to keep as Decibel (e.g. branding), not for core files where you want upstream updates.

@@ -1,10 +1,18 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides guidance when working with code in this repository.
 
 ## Project Overview
 
-Twenty is an open-source CRM built with modern technologies in a monorepo structure. The codebase is organized as an Nx workspace with multiple packages.
+**Decibel CRM** is a fork of **Twenty** (open-source CRM). The codebase is the same Nx monorepo: React frontend, NestJS backend, TypeORM, PostgreSQL, Redis, GraphQL. We add AI features on top and rebase from upstream Twenty when we want their latest changes.
+
+**Decibel-specific guidance** (where to put AI code, bridge pattern, shadow tables, logic functions, git workflow) lives in **ai-config**. Follow it for any Decibel or AI feature work:
+
+- **ai-config/README.md** — What ai-config contains and how to use it.
+- **ai-config/rules/decibel-ai-architecture.mdc** — Single source of truth: sidecar package (`packages/decibel-ai/`), bridge in twenty-front, no new columns on standard tables, backend via logic functions in a custom app, and git (pull from upstream, modular commits, `bridge:` prefix).
+- **ai-config/prompts/context.md** — Paste into a new session for quick Decibel context.
+
+For general Twenty patterns (tech stack, commands, code style below), the repo you are rebasing onto is the source of truth.
 
 ## Key Commands
 
@@ -95,11 +103,12 @@ npx nx run twenty-front:graphql:generate --configuration=metadata
 ### Package Structure
 ```
 packages/
-├── twenty-front/          # React frontend application
+├── twenty-front/          # React frontend application (bridge: src/modules/decibel/)
 ├── twenty-server/         # NestJS backend API
 ├── twenty-ui/             # Shared UI components library
 ├── twenty-shared/         # Common types and utilities
 ├── twenty-emails/         # Email templates with React Email
+├── decibel-ai/            # Decibel AI features (sidecar); integrate via bridge
 ├── twenty-website/        # Next.js documentation website
 ├── twenty-zapier/         # Zapier integration
 └── twenty-e2e-testing/    # Playwright E2E tests
@@ -166,11 +175,12 @@ Use existing helpers from `twenty-shared` instead of manual type guards:
 IMPORTANT: Use Context7 for code generation, setup or configuration steps, or library/API documentation. Automatically use the Context7 MCP tools to resolve library IDs and get library docs without waiting for explicit requests.
 
 ### Before Making Changes
-1. Always run linting (`lint:diff-with-main`) and type checking after code changes
-2. Test changes with relevant test suites (prefer single-file test runs)
-3. Ensure database migrations are generated for entity changes
-4. Check that GraphQL schema changes are backward compatible
-5. Run `graphql:generate` after any GraphQL schema changes
+1. For Decibel or AI features: follow **ai-config** (sidecar, bridge, shadow tables, logic functions). See ai-config/README.md and rules/decibel-ai-architecture.mdc.
+2. Always run linting (`lint:diff-with-main`) and type checking after code changes
+3. Test changes with relevant test suites (prefer single-file test runs)
+4. Ensure database migrations are generated for entity changes
+5. Check that GraphQL schema changes are backward compatible
+6. Run `graphql:generate` after any GraphQL schema changes
 
 ### Code Style Notes
 - Use **Emotion** for styling with styled-components pattern
@@ -195,7 +205,7 @@ When running in CI, the dev environment is **not** pre-configured. Dependencies 
 - The script is idempotent and safe to run multiple times.
 
 ## Important Files
-- `nx.json` - Nx workspace configuration with task definitions
-- `tsconfig.base.json` - Base TypeScript configuration
-- `package.json` - Root package with workspace definitions
-- `.cursor/rules/` - Detailed development guidelines and best practices
+- **ai-config/** — Decibel architecture rule, prompts, and optional skills. Required reading for AI/Decibel work. See ai-config/README.md.
+- `nx.json` — Nx workspace configuration with task definitions
+- `tsconfig.base.json` — Base TypeScript configuration
+- `package.json` — Root package with workspace definitions
