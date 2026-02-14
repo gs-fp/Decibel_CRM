@@ -11,6 +11,7 @@ This directory contains Twenty's development guidelines and best practices in th
 
 ### Core Guidelines
 - **architecture.mdc** - Project overview, technology stack, and infrastructure setup (Always Applied)
+- **decibel-ai-architecture.mdc** - Decibel CRM fork: AI/sidecar package strategy; use `packages/decibel-ai/`, not twenty-front modules (Always Applied)
 - **nx-rules.mdc** - Nx workspace guidelines and best practices (Auto-attached to Nx files)
 - **server-migrations.mdc** - Backend migration and TypeORM guidelines for `twenty-server` (Auto-attached to server entities and migration files)
 - **creating-syncable-entity.mdc** - Comprehensive guide for creating new syncable entities (with universalIdentifier and applicationId) in the workspace migration system (Agent-requested for metadata-modules and workspace-migration files)
