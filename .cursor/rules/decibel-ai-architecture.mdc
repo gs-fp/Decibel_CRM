@@ -1,0 +1,41 @@
+---
+description: Decibel CRM fork – AI features live in a sidecar package, not inside twenty-front modules
+globs: ["packages/decibel-ai/**", "**/decibel-ai/**"]
+alwaysApply: true
+---
+
+# Decibel AI – Sidecar Architecture
+
+This fork (Decibel CRM) keeps AI and custom features **out of** the core Twenty packages. Use a dedicated "sidecar" package so upstream updates stay easy to merge and custom code stays isolated.
+
+## 1. Architectural Strategy: The Sidecar Package
+
+- **Do not** add Decibel-specific or AI-specific code into `packages/twenty-front/src/modules/` or other core Twenty package internals.
+- **Do** put all Decibel AI features in a **top-level package** that sits beside the existing packages and integrates via public APIs (imports, routes, or dependency injection where appropriate).
+
+## 2. Recommended Approach: New Package `packages/decibel-ai/`
+
+- **Create** a new package at **`packages/decibel-ai/`**.
+- This is the preferred, clean approach: a single place for AI and Decibel-specific logic, UI, and integrations.
+- **Workspace registration**: Add `packages/decibel-ai` to the **`workspaces.packages`** array in the **root `package.json`** so the monorepo treats it as a workspace package (yarn/nx can resolve it, and you can depend on it from `twenty-front` or other apps if needed).
+
+Example (root `package.json`):
+
+```json
+"workspaces": {
+  "packages": [
+    "packages/twenty-front",
+    "packages/twenty-server",
+    ...
+    "packages/decibel-ai"
+  ]
+}
+```
+
+## 3. Summary for Cursor / AI Assistants
+
+When adding or designing AI or Decibel-specific functionality:
+
+1. **Target** `packages/decibel-ai/` (or another dedicated top-level package), **not** `packages/twenty-front/src/modules/`.
+2. **Register** any new package in the root `package.json` `workspaces.packages` array.
+3. **Integrate** with the rest of the app via clear boundaries (e.g. `twenty-front` importing from `decibel-ai`, or mounting routes/components from the sidecar), so core Twenty code stays untouched and merge-friendly.
