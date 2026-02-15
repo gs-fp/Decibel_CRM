@@ -16,6 +16,36 @@ For general Twenty patterns (tech stack, commands, code style below), the repo y
 
 ## Key Commands
 
+### Decibel quick start (install → start → sync app)
+
+Run from the **repo root** unless noted.
+
+1. **Install** (once, or when dependencies change):
+   ```bash
+   yarn install
+   ```
+
+2. **Start the main CRM** (frontend, backend, worker):
+   ```bash
+   yarn start
+   ```
+   Leave this running (or run in a separate terminal). The app sync in step 4 needs the server up.
+
+3. **Optional – Decibel Contact Enrichment app** (email → person enrichment). Only if you use this app; run from the app directory:
+   ```bash
+   cd packages/twenty-apps/community/decibel-enrichment
+   yarn install          # once (if it refuses to change lockfile: YARN_ENABLE_IMMUTABLE_INSTALLS=false yarn install)
+   yarn sync            # register app with Twenty (server must be running from step 2)
+   ```
+   Then configure the app in the Twenty UI:
+   - Create an API key under **Settings → APIs & Webhooks** if you don't have one.
+   - Open **Settings → Applications → Decibel Contact Enrichment → Settings tab → Configuration**.
+   - Set **TWENTY_API_KEY** to the key you created.
+   - For self-hosted, set **TWENTY_API_URL** (e.g. `http://localhost:3000`); leave empty on Twenty Cloud.
+   - **"Applications" not visible?** The `IS_APPLICATION_ENABLED` feature flag must be on. Run `npx nx database:reset twenty-server` (resets data) or insert the flag directly — see the enrichment app README troubleshooting.
+
+**Summary:** Root = `yarn install` then `yarn start`. Enrichment app = `cd` into it, `yarn install` then `yarn sync` (with server running).
+
 ### Development
 ```bash
 # Start development environment (frontend + backend + worker)
